@@ -1,21 +1,53 @@
 import pandas as pd
+import re
 import sys
+from enum import Enum
+import math
+import time
+
+class ItemValues(Enum):
+    MAX_THRESHOLD_WORD_LENGTH = 3
 
 def getInitialDataFrame(data_set):
     # if data_set = csv file, pd.method_name = read_csv
     return pd.read_csv(data_set, index_col='index');
 
 def getUserWordList():
-    # TODO: constuire une liste de mots
-    return [input('Which word would you like to have stats on? \n')]
+    clean_word_list = [];
+    user_word_list = input('Which ord would you like to have stats on? \n')
+
+    if len(user_word_list) == 0:
+        return False
+
+    for word in user_word_list.split(','):
+        clean_word_list.append(cleanUpWord(word))
+
+    return clean_word_list
 
 def getDefaultWordList(data_frame):
-    # TODO
-    pass
+    word_list = [];
+
+    for title in data_frame['title']:
+        if title and not pd.isna(title):
+            word_list_temp = re.sub("(?:\W|\d)", " ", title).split()
+
+        for word in word_list_temp:
+            if word.lower() not in word_list and isWordValid(word):
+                word_list.append(word.lower())
+
+    return word_list[:500]
+
+def isWordValid(word):
+    if len(word) <= ItemValues.MAX_THRESHOLD_WORD_LENGTH.value:
+        return False
+
+    if word == word.upper():
+        return False
+
+    return True
 
 def cleanUpWord(word):
-    # TODO
-    pass
+    return word.strip()
 
 def getMatchsTitleWord(data_frame, word):
     '''
@@ -25,7 +57,7 @@ def getMatchsTitleWord(data_frame, word):
     :return: DataFrame
     '''
     # les mots dont les caractères précédents et suivans ne sont pas des lettres
-    word_regex = '(^|\W)' + word[0] + '\W'
+    word_regex = '(?:^|\W)' + word + '\W'
 
     return data_frame[data_frame['title'].str.contains(
         word_regex, case=False, regex=True, na=False)]
@@ -52,32 +84,35 @@ def getDictOfResults(word, likes, comments, shares):
 
     return dict_of_result
 
+def run():
+    initial_data_frame = getInitialDataFrame('./articles_data.csv')
+    word_list = getUserWordList()
 
-initial_data_frame = getInitialDataFrame('./articles_data.csv')
-word_list = getUserWordList()
+    if word_list == False:
+        word_list = getDefaultWordList(initial_data_frame)
 
-if len(word_list) == 0:
-    word_list = getDefaultWordList(initial_data_frame)
+    rows_list = []
 
-filtered_data_frame = getMatchsTitleWord(
-        initial_data_frame,
-        word_list)
+    for word in word_list:
+        start_time = time.time()
+        print(word)
+        filtered_data_frame = getMatchsTitleWord(
+                initial_data_frame,
+                word)
 
-likes = getNumberOfLikes(filtered_data_frame)
-comments = getNumberOfComments(filtered_data_frame)
-shares = getNumberOfShares(filtered_data_frame)
+        likes = getNumberOfLikes(filtered_data_frame)
+        comments = getNumberOfComments(filtered_data_frame)
+        shares = getNumberOfShares(filtered_data_frame)
 
-rows_list = []
+        rows_list.append(getDictOfResults(word, likes, comments, shares))
 
-for word in word_list:
-    rows_list.append(getDictOfResults(word, likes, comments, shares))
+        print("--- %s seconds ---" % (time.time() - start_time))
 
-final_dataframe = pd.DataFrame(rows_list)
+        # print(rows_list)
+        # sys.exit()
 
-print(final_dataframe)
+    final_dataframe = pd.DataFrame(rows_list).sort_values('likes', ascending=False)
 
-for word in word_list:
-    pass
+    print(final_dataframe)
 
-
-
+run()
