@@ -15,7 +15,6 @@ class Question :
     def showResult(self) :
         """ Montre le resultat """
         self.processResult(self.data, self)
-        print("\n")
     
     def showGraphic(self) :
         """ Montre le graphique"""
