@@ -31,3 +31,11 @@ class Chart :
         plt.title(title)
 
         plt.barh(r, datas, height = barWidth, color = colors)
+
+    @staticmethod
+    def histGraph(labelsBar, heightBar, garphTitile, xAxeTitle, yAxeTitle):
+        plt.bar(labelsBar, heightBar)
+        plt.title(garphTitile)
+        plt.xlabel(xAxeTitle)
+        plt.ylabel(yAxeTitle)
+        plt.show()
