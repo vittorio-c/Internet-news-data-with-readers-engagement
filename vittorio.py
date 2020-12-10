@@ -1,14 +1,11 @@
 import pandas as pd
 import re
 import sys
-import math
-import time
 from enum import Enum
 import matplotlib.pyplot as plt
 import numpy as np
-
-# taille des figures générées
-plt.rcParams['figure.figsize'] = [20, 15]
+from classes.Chart import Chart
+import time
 
 class ItemValues(Enum):
     MAX_THRESHOLD_WORD_LENGTH = 3
@@ -79,12 +76,6 @@ def cleanUpWord(word):
     return word.strip()
 
 def getMatchsTitleWord(data_frame, word):
-    '''
-    Retourne un nouveau dataframe contenant uniquement
-    les lignes dont le titre contient 'word'
-
-    :return: DataFrame
-    '''
     # les mots dont les caractères précédents et suivans ne sont pas des lettres
     word_regex = '(?:^|\W)' + word + '(?:$|\W)'
 
@@ -112,13 +103,9 @@ def getNumberOfCommentsByIndexes(indexes, data_frame):
 def getNumberOfSharesByIndexes(indexes, data_frame):
     return data_frame.iloc[indexes]['engagement_share_count'].sum()
 
-def getDictOfResults(word, likes, comments, shares):
-    result = []
-    result[word] = [likes, comments, shares]
-
-    return result
-
 def drawHorizontalThreeBarsChart(keys, vals, labels, height=0.8):
+    plt.figure(figsize=(20,15))
+
     # trick to display bars in descending order
     Y = list(reversed(keys))
     for idx,val in enumerate(vals):
@@ -138,7 +125,6 @@ def drawHorizontalThreeBarsChart(keys, vals, labels, height=0.8):
     plt.yticks(_Y, Y)
     # placement de la légende
     plt.legend()
-    # plt.figure(num=1,figsize=(12,8), dpi= 100, facecolor='w', edgecolor='k')
 
 def getAppParameters(user_args):
     try:
@@ -166,24 +152,15 @@ def getSliceToShow(parameters):
 
 
 def run():
+    initial_data_frame = getInitialDataFrame('./articles_data.csv')
     user_args = sys.argv[1:]
     parameters = getAppParameters(user_args)
-
-    initial_data_frame = getInitialDataFrame('./articles_data.csv')
-    word_list = getUserWordList()
     dict_result = {}
+
     start_time = time.time()
+    if len(user_args) == 0:
+        word_list = getUserWordList()
 
-    if word_list == False:
-        word_list = getDefaultWordList(initial_data_frame)
-
-        for word,indexes in word_list.items():
-            likes = getNumberOfLikesByIndexes(indexes, initial_data_frame)
-            comments = getNumberOfCommentsByIndexes(indexes, initial_data_frame)
-            shares = getNumberOfSharesByIndexes(indexes, initial_data_frame)
-
-            dict_result[word] = [likes, comments, shares]
-    else:
         for word in word_list:
             new_data_frame = getMatchsTitleWord(initial_data_frame, word)
 
@@ -192,17 +169,24 @@ def run():
             shares = getNumberOfShares(new_data_frame)
 
             dict_result[word] = [likes, comments, shares]
+    else:
+        word_list = getDefaultWordList(initial_data_frame)
 
-    category_names = ['Likes', 'Comments', 'Shares']
+        for word,indexes in word_list.items():
+            likes = getNumberOfLikesByIndexes(indexes, initial_data_frame)
+            comments = getNumberOfCommentsByIndexes(indexes, initial_data_frame)
+            shares = getNumberOfSharesByIndexes(indexes, initial_data_frame)
+
+            dict_result[word] = [likes, comments, shares]
+
     results = dict(sorted(dict_result.items(), key=lambda v: v[1][0], reverse=True))
 
+    category_names = ['Likes', 'Comments', 'Shares']
     words = []
     likes = []
     comments = []
     shares = []
-
     labels = ['Likes', 'Comments', 'Shares']
-
     slices = getSliceToShow(parameters)
 
     for key,value in list(results.items())[slices]:
@@ -211,7 +195,7 @@ def run():
         comments.append(value[1])
         shares.append(value[2])
 
-    drawHorizontalThreeBarsChart(words, [likes, comments, shares], labels)
-    plt.show()
+    Chart.drawHorizontalThreeBarsChart(words, [likes, comments, shares], labels)
+    print("{} words proceeded in {} seconds".format(str(len(word_list)), (time.time() - start_time)))
 
 run()
