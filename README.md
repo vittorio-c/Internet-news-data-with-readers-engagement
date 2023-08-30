@@ -1,5 +1,7 @@
 # About
 
+> This is a student project
+ 
 This repository is an Exploratory Data Analysis (EDA) of a dataset showing engagement counts on articles published by several medias.
 
 Engagement is mesured on social media (Facebook, Twitter, etc.), with following KPI :
